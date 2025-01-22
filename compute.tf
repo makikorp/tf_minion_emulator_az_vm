@@ -72,16 +72,12 @@ resource "local_file" "public_ip_address"{
   filename = "azure_hosts"
 }
 
-# resource "local_file" "remove_2nd_address" {
-#   content = "awk 'NR % 2 == 0'"
-#   filename = "azure_hosts"
-# }
 
 #Call and run Ansible playbook
 resource "null_resource" "opennms_install" {
   
   provisioner "local-exec" {
-    command = "ansible-playbook -i /users/emaki/code/tf_minion_emulator_az_vm/azure_hosts --key-file /Users/emaki/.ssh/ericTFazure playbooks/minion.yml"
+    command = "ansible-playbook -i /path/to/code/tf_minion_emulator_az_vm/azure_hosts --key-file /path/to/.ssh/<key_name> playbooks/minion.yml"
   }
   depends_on = [
     azurerm_linux_virtual_machine.onms_minion_vm
