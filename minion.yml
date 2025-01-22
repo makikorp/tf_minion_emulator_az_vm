@@ -1,0 +1,118 @@
+---
+- name: Install minion
+  hosts: main
+  remote_user: minion
+  become: true
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=accept-new"
+  #  - ansible_ssh_common_args: "-o StrictHostKeyChecking=accept-new"
+
+  tasks:
+    # - name: yum upgade all
+    #   ansible.builtin.yum:
+    #     name: '*'
+    #     state: latest
+        
+    - name: install required packages
+      ansible.builtin.yum:
+        name:
+          - langpacks-en 
+          - glibc-all-langpacks
+          - java-11-openjdk-headless
+          # - postgresql
+          # - postgresql-libs #postgresql-private-libs
+          - yum-utils
+          - epel-release
+          - firewalld
+        state: latest
+        update_cache: true
+      
+    - name: start firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        enabled: yes
+        state: started
+
+    - name: open ports
+      ansible.posix.firewalld:
+        port: 8980/tcp
+        zone: public
+        permanent: true
+        state: enabled
+    - name: open ports
+      ansible.posix.firewalld:
+        port: 61616/tcp
+        permanent: true
+        state: enabled   
+
+    - name: reload firewalld
+      ansible.builtin.shell:
+        cmd: sudo firewall-cmd --reload
+
+    - name: download yum key
+      ansible.builtin.rpm_key:
+        key: https://yum.opennms.org/OPENNMS-GPG-KEY
+        state: present
+
+    - name: add minion repo
+      ansible.builtin.shell:
+        cmd: sudo dnf -y install https://yum.opennms.org/repofiles/opennms-repo-stable-rhel9.noarch.rpm 
+
+    - name: install horizon minion package
+      ansible.builtin.yum:
+        name: opennms-minion
+        state: present
+        update_cache: yes
+        disable_gpg_check: yes        
+
+
+    #USE BELOW FOR MERIDIAN
+    # - name: cp meridian.repo  
+    #   copy:
+    #     src: /Users/emaki/code/tf_opennms_azure_vm/meridian.repo
+    #     dest: /etc/yum.repos.d/
+    #     owner: eric
+    #     mode: 0755   
+    
+    # #USE BELOW FOR Horizon
+    # - name: cp horizon.repo  
+    #   copy:
+    #     src: /Users/emaki/code/tf_opennms_azure_vm/horizon.repo
+    #     dest: /etc/yum.repos.d/
+    #     owner: eric
+    #     mode: 0755   
+
+    # USE BELOW FOR HORIZON
+    # - name: add opennms to yum repo
+    #   ansible.builtin.shell:
+    #     cmd: sudo yum -y install https://yum.opennms.org/repofiles/opennms-repo-stable-rhel9.noarch.rpm
+
+    # USE BELOW FOR HORIZON
+    # - name: add opennms to yum repo
+    #   ansible.builtin.shell:
+    #     cmd: sudo yum -y install https://yum.opennms.org/repofiles/opennms-repo-stable-fc29.noarch.rpm
+
+
+
+    # - name: Update yum cache and install opennms
+    #   ansible.builtin.yum: 
+    #     #name: opennms
+    #     name: meridian
+    #     state: present
+    #     update_cache: yes
+    #     disable_gpg_check: yes
+   
+    # - name: detect and assign java environment
+    #   ansible.builtin.shell:
+    #     cmd: sudo /opt/opennms/bin/runjava -s
+
+    # - name: initialize opennms database
+    #   ansible.builtin.shell:
+    #     cmd: sudo /opt/opennms/bin/install -dis
+
+
+    - name: Ensure OpenNMS is started and enabled
+      ansible.builtin.systemd:
+        name: minion
+        enabled: yes
+        state: started
